@@ -9,7 +9,7 @@
 </style>
 </head>
 <body>
-<canvas id="stimulus" aria-label="視覚運動刺激：設定パネルで条件を選びSTARTで提示"></canvas>
+<canvas id="stimulus" tabindex="-1" aria-label="視覚運動刺激：3Dモードではドラッグとホイールで視点を操作"></canvas>
 <aside class="panel" id="panel" aria-label="刺激設定">
 <header><div class="eyebrow">PERCEPTION / TEACHING DEMO · V1</div><h1>Visual Motion Lab</h1><p>視覚による姿勢制御を体験する</p></header>
 <div class="scroll">
@@ -17,7 +17,7 @@
 <section><h2>02 / Motion</h2>
 <div class="row"><label class="label" for="mode">刺激モード</label><select id="mode"><option value="2d">2D dot motion</option><option value="push">Visual push — 全視野平行移動</option><option value="3d">3D optic flow — 透視投影</option></select></div>
 <button id="explore">マウスで3D探索</button>
-<div id="mouseControls" hidden><label><input type="checkbox" id="mouseEnabled" checked> マウスで視点を操作</label><p class="note">再生中、刺激上をドラッグ：視線を左右・上下へ。ホイール上：視線方向へ前進／下：後退。Space：再生・停止。</p><div class="note" id="cameraValues"></div><button id="centerView">視点を正面へ戻す</button></div>
+<div id="mouseControls" hidden><label><input type="checkbox" id="mouseEnabled" checked> マウスで視点を操作</label><p class="note">停止中も操作できます。パネル外のドット領域を左ドラッグ：視線変更。ホイール上：前進／下：後退。Space：自動運動の再生・停止。</p><div class="note" id="cameraValues"></div><button id="centerView">視点を正面へ戻す</button></div>
 <div class="row"><label class="label" for="pattern">Motion direction / pattern</label><select id="pattern"></select></div>
 <div class="row"><label class="label" for="motionType">Motion type</label><select id="motionType"><option value="constant">Constant</option><option value="sinusoidal">Sinusoidal</option></select></div>
 <div id="motionRanges"></div><div class="formula"><code id="equation"></code><span id="explanation"></span></div>
@@ -55,7 +55,7 @@ const PATTERNS={left:'← 左方向への平行移動',right:'→ 右方向へ�
 let s={...DEFAULTS}, w=innerWidth,h=innerHeight,points=[],seed=1975,phase=0,time=0,shift=0,radialLog=0,worldOffset=0,running=false,counting=false,countStart=0,lastStamp=0,fps=0,frames=0,fpsStart=0,lastStatus=0,presetName='Static dots',toastTimer;
 const ranges={};
 // Gaze is independent of the automatic translation axis (world +Z).
-// Target rotations and wheel travel are rate-limited, applied only while running.
+// Manual camera input is independent of automatic playback, including at rest.
 const view={yaw:0,pitch:0,targetYaw:0,targetPitch:0,travel:0,pending:0};
 let drag=null;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -111,6 +111,10 @@ function frame(stamp){const dt=lastStamp?(stamp-lastStamp)/1000:0;lastStamp=stam
  if(running&&dt>.25){stop();setHidden(false);notify('描画が中断されたため停止しました。STARTで再開できます。');}
  if(counting){const remain=3-Math.floor((stamp-countStart)/1000);if(remain<=0){counting=false;running=true;$('countdown').hidden=true;syncStatus();}else $('countdown').textContent=String(remain);}
  else if(running)advance(dt);
+ else if(mouseAllowed()){
+  advanceView(Math.min(dt,.05));
+  for(const p of points){const v=project(p);if(v.z<s.near||v.z>s.far||v.x<0||v.x>w||v.y<0||v.y>h)spawn3D(p);}
+ }
  draw();frames++;if(stamp-fpsStart>=1000){fps=Math.round(frames*1000/(stamp-fpsStart));frames=0;fpsStart=stamp;}if(stamp-lastStatus>250){syncStatus();lastStatus=stamp;}requestAnimationFrame(frame);}
 function addRange(parent,key,label,min,max,step,unit){const row=document.createElement('div');row.className='row';row.innerHTML=`<div class="label"><label for="${key}">${label}</label><span class="value"><input aria-label="${label} 数値" type="number" id="${key}Number" min="${min}" max="${max}" step="${step}"><span>${unit}</span></span></div><input id="${key}" type="range" min="${min}" max="${max}" step="${step}" aria-label="${label}">`;$(parent).append(row);ranges[key]={row,input:$(key),number:$(key+'Number')};for(const input of [$(key),$(key+'Number')]){input.addEventListener('input',()=>{if(input.value===''||!Number.isFinite(input.valueAsNumber))return;let v=Math.max(min,Math.min(max,input.valueAsNumber));v=Number((Math.round((v-min)/step)*step+min).toFixed(4));if(key==='near')v=Math.min(v,s.far-1);if(key==='far')v=Math.max(v,s.near+1);s[key]=v;ranges[key].input.value=v;if(input.type!=='number'||v!==input.valueAsNumber)ranges[key].number.value=v;else ranges[key].number.value=input.value;changed(key);});input.addEventListener('change',()=>syncUI());}}
 function buildRanges(){addRange('motionRanges','speed','Speed',0,200,1,'px/s');addRange('motionRanges','amplitude','Amplitude（片振幅）',0,80,1,'px');addRange('motionRanges','radialSpeed','Expansion rate',0,.5,.01,'s⁻¹');addRange('motionRanges','radialAmp','Amplitude（対数倍率）',0,.35,.01,'');addRange('motionRanges','worldSpeed','Simulated speed',0,2,.05,'m/s');addRange('motionRanges','worldAmp','Amplitude（前後変位）',0,.5,.01,'m');addRange('motionRanges','frequency','Frequency',.05,.5,.01,'Hz');addRange('appearanceRanges','size','ドットサイズ（直径・幅）',1,16,.5,'px');addRange('appearanceRanges','count','ドット数 / density',100,4000,100,'個');addRange('appearanceRanges','opacity','不透明度',.05,1,.05,'');addRange('depthRanges','near','Depth near',1,10,.5,'m');addRange('depthRanges','far','Depth far',2,50,.5,'m');addRange('depthRanges','fov','Field of view（水平）',40,120,1,'°');addRange('depthRanges','foeX','FOE X（左 → 右）',10,90,1,'%');addRange('depthRanges','foeY','FOE Y（上 → 下）',10,90,1,'%');}
@@ -137,16 +141,16 @@ document.addEventListener('keydown',e=>{
 });
 // Only the stimulus canvas accepts gestures; panel scrolling remains native.
 canvas.style.touchAction='none';
-function mouseAllowed(){return s.mode==='3d'&&$('mouseEnabled').checked&&!$('warning').open;}
-canvas.addEventListener('pointerdown',e=>{if(e.button!==0||!mouseAllowed())return;if(!running){notify('Space または STARTで再生すると視点を操作できます。');return;}e.preventDefault();document.activeElement.blur();drag={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';});
-canvas.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId||!running)return;const sensitivity=.12*Math.PI/180;view.targetYaw=clamp(view.targetYaw+(e.clientX-drag.x)*sensitivity,-Math.PI/3,Math.PI/3);view.targetPitch=clamp(view.targetPitch+(e.clientY-drag.y)*sensitivity,-Math.PI/4,Math.PI/4);drag.x=e.clientX;drag.y=e.clientY;});
+function mouseAllowed(){return s.mode==='3d'&&$('mouseEnabled').checked&&!$('warning').open&&!counting;}
+canvas.addEventListener('pointerdown',e=>{if(e.button!==0||!mouseAllowed())return;e.preventDefault();canvas.focus({preventScroll:true});drag={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';});
+canvas.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId||!mouseAllowed())return;const sensitivity=.12*Math.PI/180;view.targetYaw=clamp(view.targetYaw+(e.clientX-drag.x)*sensitivity,-Math.PI/3,Math.PI/3);view.targetPitch=clamp(view.targetPitch+(e.clientY-drag.y)*sensitivity,-Math.PI/4,Math.PI/4);drag.x=e.clientX;drag.y=e.clientY;});
 function releaseDrag(e){if(drag?.id===e.pointerId){drag=null;canvas.style.cursor='';}}
 canvas.addEventListener('pointerup',releaseDrag);canvas.addEventListener('pointercancel',()=>cancelMouse());canvas.addEventListener('lostpointercapture',releaseDrag);
-canvas.addEventListener('wheel',e=>{if(!mouseAllowed()||e.ctrlKey)return;e.preventDefault();if(!running){notify('Space または STARTで再生すると視点を操作できます。');return;}const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?h:1);view.pending=clamp(view.pending-delta*.002,-.5,.5);},{passive:false});
+canvas.addEventListener('wheel',e=>{if(!mouseAllowed()||e.ctrlKey)return;e.preventDefault();const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?h:1);view.pending=clamp(view.pending-delta*.002,-.5,.5);},{passive:false});
 $('mouseEnabled').onchange=()=>cancelMouse();
-$('explore').onclick=()=>{stop();s.mode='3d';s.pattern='expand';s.motionType='constant';s.worldSpeed=0;syncPatterns();changed('mode');$('mouseEnabled').checked=true;notify('3D探索：Spaceで再生。ドラッグで視線、ホイールで前後移動。');};
+$('explore').onclick=()=>{stop();s.mode='3d';s.pattern='expand';s.motionType='constant';s.worldSpeed=0;syncPatterns();changed('mode');$('mouseEnabled').checked=true;notify('3D探索：ドット領域でドラッグ・ホイールを操作してください。STARTは不要です。');};
 $('centerView').onclick=()=>{stop();resetMotion();syncUI();draw();notify('正面・初期配置に戻しました。Spaceで再生できます。');};
-document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();setHidden(false);}});window.addEventListener('blur',()=>{if(running||counting){stop();setHidden(false);}});window.addEventListener('resize',resize);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();setHidden(false);}});window.addEventListener('blur',()=>{stop();setHidden(false);});window.addEventListener('resize',resize);
 $('ack').onclick=()=>{$('warning').close();$('start').focus();};$('safety').onclick=()=>{stop();$('warning').showModal();};$('warning').addEventListener('cancel',()=>stop());
 buildRanges();applyPreset(0);resize();$('warning').showModal();requestAnimationFrame(frame);
 </script>
