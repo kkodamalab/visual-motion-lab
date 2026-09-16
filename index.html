@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Visual Motion Lab — 視覚による姿勢制御</title>
+<style>
+:root{color-scheme:dark;--panel:#131b24;--line:#2b3946;--text:#eaf0f5;--muted:#a7b7c6;--accent:#ccf179}*{box-sizing:border-box}body{margin:0;overflow:hidden;background:#090e14;color:var(--text);font:14px/1.5 system-ui,"Yu Gothic",sans-serif}canvas{position:fixed;inset:0;width:100%;height:100%;display:block}button,input,select{font:inherit}button,select,input[type=number]{border:1px solid var(--line);border-radius:6px;background:#1d2935;color:var(--text)}button{padding:9px 12px;cursor:pointer}button:hover{background:#304151}button:disabled{opacity:.45;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.primary{background:var(--accent);color:#17200b;border-color:var(--accent);font-weight:750}.primary:hover{background:#dcffa0}.stop{border-color:#ac7774;color:#ffd0ca}.panel{position:fixed;left:18px;top:18px;bottom:18px;width:344px;background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;box-shadow:0 12px 50px #0005}header{padding:18px 19px 13px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-size:12px;letter-spacing:.15em;font-weight:700}h1{font-size:23px;margin:3px 0;font-weight:650;letter-spacing:-.04em}header p{margin:0;color:var(--muted);font-size:13px}.scroll{padding:0 18px 18px;overflow-y:auto;scrollbar-width:thin}section{padding-top:16px}h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 9px}.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}.preset{text-align:left;font-size:12px;min-height:45px;padding:7px 9px}.preset small{display:block;color:var(--muted);font-size:12px}.preset[aria-pressed=true]{border-color:var(--accent);background:#283524}.preset:last-child{grid-column:1/-1}.row{margin:10px 0}.label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}select{width:100%;padding:8px}.value{display:flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums;color:var(--accent)}input[type=number]{width:75px;padding:3px 5px;text-align:right}input[type=range]{width:100%;accent-color:var(--accent);height:18px;margin:0;display:block}input[type=checkbox]{accent-color:var(--accent)}input[type=color]{width:44px;height:28px;border:0;padding:0;background:none;cursor:pointer}.colors{display:flex;justify-content:space-between;gap:10px}.color{display:flex;gap:8px;align-items:center}.note{font-size:12px;color:var(--muted);margin:7px 0 0;line-height:1.6}.formula{border-left:2px solid var(--accent);padding:8px 10px;background:#1a2630;margin-top:12px;font-size:13px}.formula code{display:block;color:var(--accent);margin-bottom:5px;font-size:13px}.panel-footer{border-top:1px solid var(--line);padding:12px 18px}.panel-footer button{width:100%}.toolbar{position:fixed;right:18px;top:18px;display:flex;gap:7px;padding:7px;background:#131b24;border:1px solid var(--line);border-radius:10px}.statusbar{position:fixed;right:22px;bottom:20px;text-align:right;max-width:calc(100vw - 400px);background:#101820ed;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}.statusbar strong{color:var(--text);font-size:14px;font-weight:500}.badge{color:var(--accent);margin-left:14px}.hidden-controls .panel,.hidden-controls .statusbar{display:none}.hidden-controls .toolbar{opacity:0;transition:opacity .2s}.hidden-controls .toolbar:hover,.hidden-controls .toolbar:focus-within{opacity:1}.hidden-controls .restore{display:block}.restore{display:none;position:fixed;left:12px;top:12px;font-size:12px;background:#151c23d9;color:#dce5ec}#countdown{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;background:#090e14a6;font-size:min(25vw,160px);font-weight:300;color:white}#countdown[hidden],[hidden]{display:none!important}dialog{max-width:490px;width:calc(100% - 36px);border:1px solid #465260;border-radius:14px;background:#17212c;color:var(--text);padding:26px;box-shadow:0 20px 100px #0008}dialog::backdrop{background:#02070cd9}dialog h2{font-size:22px;color:var(--text);letter-spacing:0;text-transform:none}dialog p{font-size:15px}.warning{color:#ffda9d;border-left:3px solid #e7b971;padding-left:12px}dialog button{width:100%;margin-top:10px}#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#303e4a;padding:12px 18px;border-radius:8px;max-width:90vw;z-index:5}.keys{margin-top:5px;color:#8294a5}details{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}summary{cursor:pointer;color:var(--muted)}a{color:var(--accent)}
+@media(max-width:760px){.panel{left:10px;top:78px;bottom:10px;width:min(344px,calc(100vw - 20px))}.toolbar{left:10px;right:auto;top:10px;gap:4px}.toolbar button{padding:8px;font-size:12px}.statusbar{display:none}}@media(max-height:560px) and (min-width:761px){.panel{top:10px;bottom:10px}header{padding:10px 18px}header p{display:none}}
+</style>
+</head>
+<body>
+<canvas id="stimulus" aria-label="視覚運動刺激：設定パネルで条件を選びSTARTで提示"></canvas>
+<aside class="panel" id="panel" aria-label="刺激設定">
+<header><div class="eyebrow">PERCEPTION / TEACHING DEMO · V1</div><h1>Visual Motion Lab</h1><p>視覚による姿勢制御を体験する</p></header>
+<div class="scroll">
+<section><h2>01 / Presets</h2><div class="presets" id="presets"></div></section>
+<section><h2>02 / Motion</h2>
+<div class="row"><label class="label" for="mode">刺激モード</label><select id="mode"><option value="2d">2D dot motion</option><option value="push">Visual push — 全視野平行移動</option><option value="3d">3D optic flow — 透視投影</option></select></div>
+<button id="explore">マウスで3D探索</button>
+<div id="mouseControls" hidden><label><input type="checkbox" id="mouseEnabled" checked> マウスで視点を操作</label><p class="note">再生中、刺激上をドラッグ：視線を左右・上下へ。ホイール上：視線方向へ前進／下：後退。Space：再生・停止。</p><div class="note" id="cameraValues"></div><button id="centerView">視点を正面へ戻す</button></div>
+<div class="row"><label class="label" for="pattern">Motion direction / pattern</label><select id="pattern"></select></div>
+<div class="row"><label class="label" for="motionType">Motion type</label><select id="motionType"><option value="constant">Constant</option><option value="sinusoidal">Sinusoidal</option></select></div>
+<div id="motionRanges"></div><div class="formula"><code id="equation"></code><span id="explanation"></span></div>
+</section>
+<section><h2>03 / Appearance</h2><div class="colors"><label class="color" for="bg">背景 <input type="color" id="bg" value="#090e14"></label><label class="color" for="color">ドット <input type="color" id="color" value="#c3d4de"></label></div>
+<div class="row"><label class="label" for="shape">ドット形状</label><select id="shape"><option value="circle">円 / Circle</option><option value="square">四角 / Square</option><option value="cross">十字 / Cross</option><option value="line">短い線 / Horizontal line</option></select></div><div id="appearanceRanges"></div></section>
+<section id="depthSection"><h2>04 / 3D projection</h2><div id="depthRanges"></div><p class="note">FOVは仮想カメラの水平画角です。実際の観察視野角とは異なります。ドット径は画面上で一定。</p></section>
+<section><h2>Presentation</h2><label><input type="checkbox" id="countEnabled" checked> 開始前に 3 → 2 → 1</label><p class="note">パラメータ変更は即時反映。運動条件の変更は位相を0へ戻します。比較試行はSTOP → 条件変更 → RESET → START。</p></section>
+<details><summary>教材としての読み方</summary><p class="note">画面上の運動方向と、感じられる自己運動の方向を区別して観察します。姿勢の変化は測定していません。Swinging-room-likeは平面画像による類似刺激で、実物の部屋の再現ではありません。</p><p class="note">気分が悪くなった場合は直ちに画面から目を離し、刺激提示を停止してください。</p><button id="safety" style="margin-top:8px">注意事項を見る</button></details>
+</div><div class="panel-footer"><button id="hide">Hide controls <span style="color:#9babba">· H</span></button></div></aside>
+<nav class="toolbar" aria-label="提示操作"><button id="start" class="primary">▶ START</button><button id="stop" class="stop">■ STOP</button><button id="reset">RESET</button><button id="fullscreen">FULLSCREEN</button></nav>
+<button id="show" class="restore">Show controls · H / Esc</button>
+<div class="statusbar"><div><strong id="condition">Static dots</strong><span class="badge" id="state" role="status">READY</span></div><div id="metrics"></div><div class="keys">Space 再生／停止　 /　 Esc 停止　 /　 H 設定切替</div></div>
+<div id="countdown" hidden role="status" aria-live="polite"></div><div id="toast" role="status" hidden></div>
+<dialog id="warning"><div class="eyebrow">BEFORE YOU START</div><h2>体調を優先して観察してください</h2><p>広い視野の動くパターンにより、めまい・気分不良が生じることがあります。まず座った状態で、短時間・低速から試してください。参加や中断は自由です。</p><p class="warning">気分が悪くなった場合は直ちに画面から目を離し、刺激提示を停止してください。</p><p>立位で行う場合は教員の監督下で、周囲を片付け、転倒しないよう支えを確保してください。<b>Escキーで停止できます。</b></p><button id="ack" class="primary">注意事項を確認して設定へ</button></dialog>
+<script>
+'use strict';
+/* Visual Motion Lab v1 — no external resources.
+ * Teacher edits: PRESETS, DEFAULTS and buildRanges() hold all teaching defaults.
+ * CSS px are screen coordinates, m denotes virtual units (not calibrated metres).
+ * Deterministic PRNG gives RESET the same initial cloud at identical geometry.
+ */
+const $=id=>document.getElementById(id), canvas=$('stimulus'), ctx=canvas.getContext('2d',{alpha:false});
+const TAU=2*Math.PI, DEFAULTS={mode:'2d',pattern:'right',motionType:'constant',speed:0,amplitude:40,frequency:.15,radialSpeed:.15,radialAmp:.2,worldSpeed:.5,worldAmp:.2,bg:'#090e14',color:'#c3d4de',shape:'circle',size:4,count:1100,opacity:.65,near:1,far:20,fov:90,foeX:50,foeY:50};
+const PRESETS=[
+ {name:'Static dots',sub:'静止基準',values:{}},
+ {name:'Slow visual push',sub:'左右 · 30 px/s',values:{mode:'push',speed:30}},
+ {name:'Fast visual push',sub:'左右 · 100 px/s',values:{mode:'push',speed:100}},
+ {name:'Swinging-room-like',sub:'左右 · ±40 px / 0.15 Hz',values:{mode:'push',pattern:'oscX',motionType:'sinusoidal'}},
+ {name:'Forward optic flow',sub:'前進 · 0.5 m/s',values:{mode:'3d',pattern:'expand'}},
+ {name:'Backward optic flow',sub:'後退 · 0.5 m/s',values:{mode:'3d',pattern:'contract'}},
+ {name:'Expansion / contraction',sub:'周期的な拡大・縮小 · 0.15 Hz',values:{pattern:'oscR',motionType:'sinusoidal'}}
+];
+const PATTERNS={left:'← 左方向への平行移動',right:'→ 右方向への平行移動',up:'↑ 上方向への平行移動',down:'↓ 下方向への平行移動',expand:'↗ Optic expansion / 拡大',contract:'↙ Optic contraction / 収縮',oscX:'↔ 左右方向の周期運動',oscY:'↕ 上下方向の周期運動',oscR:'↗↙ Expansion / contraction周期運動'};
+let s={...DEFAULTS}, w=innerWidth,h=innerHeight,points=[],seed=1975,phase=0,time=0,shift=0,radialLog=0,worldOffset=0,running=false,counting=false,countStart=0,lastStamp=0,fps=0,frames=0,fpsStart=0,lastStatus=0,presetName='Static dots',toastTimer;
+const ranges={};
+// Gaze is independent of the automatic translation axis (world +Z).
+// Target rotations and wheel travel are rate-limited, applied only while running.
+const view={yaw:0,pitch:0,targetYaw:0,targetPitch:0,travel:0,pending:0};
+let drag=null;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function cancelMouse(){drag=null;view.targetYaw=view.yaw;view.targetPitch=view.pitch;view.pending=0;canvas.style.cursor='';}
+function resetView(){cancelMouse();Object.keys(view).forEach(k=>view[k]=0);}
+function toCamera(p){const cy=Math.cos(view.yaw),sy=Math.sin(view.yaw),cp=Math.cos(view.pitch),sp=Math.sin(view.pitch);const x=cy*p.x-sy*p.z,z=sy*p.x+cy*p.z;return {x,y:cp*p.y-sp*z,z:sp*p.y+cp*z};}
+function fromCamera(p){const cy=Math.cos(view.yaw),sy=Math.sin(view.yaw),cp=Math.cos(view.pitch),sp=Math.sin(view.pitch);const y=cp*p.y+sp*p.z,z=-sp*p.y+cp*p.z;return {x:cy*p.x+sy*z,y,z:-sy*p.x+cy*z};}
+function advanceView(dt){const step=Math.PI/6*dt;view.yaw+=clamp(view.targetYaw-view.yaw,-step,step);view.pitch+=clamp(view.targetPitch-view.pitch,-step,step);const travel=clamp(view.pending,-2*dt,2*dt);view.pending-=travel;view.travel+=travel;if(travel){const d=fromCamera({x:0,y:0,z:travel});for(const p of points){p.x-=d.x;p.y-=d.y;p.z-=d.z;}}}
+const mod=(x,n)=>((x%n)+n)%n;
+function rand(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}
+function isRadial(){return s.mode==='3d'||['expand','contract','oscR'].includes(s.pattern);}
+function isSin(){return s.motionType==='sinusoidal';}
+function sign(){return ['left','up','contract'].includes(s.pattern)?-1:1;}
+function focal(){return w/(2*Math.tan(s.fov*Math.PI/360));}
+function project(p){const f=focal(),q=toCamera(p);return {x:w*s.foeX/100+f*q.x/q.z,y:h*s.foeY/100+f*q.y/q.z,z:q.z};}
+/* Screen-uniform samples, random depth, inverse perspective to XYZ.
+ * Each point stays fixed in X,Y until its depth or image leaves the frustum.
+ * Regeneration maintains a screen-filling cloud. It is not a uniform-density
+ * infinite world, and clipping/rebirth is not evidence of physical acceleration.
+ */
+function spawn3D(p){const z=s.near+rand()*(s.far-s.near),f=focal();Object.assign(p,fromCamera({x:(rand()*w-w*s.foeX/100)*z/f,y:(rand()*h-h*s.foeY/100)*z/f,z}));}
+function newCloud(){seed=1975;points=[];const cover=Math.exp(.35);for(let i=0;i<s.count;i++){const p={x:(rand()-.5)*w*cover,y:(rand()-.5)*h*cover};if(s.mode==='3d')spawn3D(p);else if(!isRadial()){p.x=rand()*w;p.y=rand()*h;}else if(!isSin()){p.x=(rand()-.5)*w;p.y=(rand()-.5)*h;}points.push(p);}}
+function resetMotion(){phase=0;shift=0;radialLog=0;worldOffset=0;time=0;resetView();newCloud();}
+function resize(){w=innerWidth;h=innerHeight;const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);resetMotion();draw();}
+function shape(x,y,d){const r=d/2;ctx.beginPath();switch(s.shape){case'circle':ctx.arc(x,y,r,0,TAU);ctx.fill();break;case'square':ctx.fillRect(x-r,y-r,d,d);break;case'cross':ctx.lineWidth=Math.max(1,d/5);ctx.moveTo(x-r,y);ctx.lineTo(x+r,y);ctx.moveTo(x,y-r);ctx.lineTo(x,y+r);ctx.stroke();break;case'line':ctx.lineWidth=Math.max(1,d/5);ctx.moveTo(x-r,y);ctx.lineTo(x+r,y);ctx.stroke();}}
+/* Displacement sinusoid, not sinusoidally modulated speed:
+ * q=A sin(phi), dq=A[sin(phi+dphi)-sin(phi)]. Peak speed=2*pi*f*A.
+ * 2D radial: log(scale)=a sin(phi). 3D: camera Z=A sin(phi).
+ */
+function advance(dt){time+=dt;const oldPhase=phase;phase=mod(phase+TAU*s.frequency*dt,TAU);const ds=Math.sin(phase)-Math.sin(oldPhase),sgn=sign();
+ if(s.mode==='3d'){
+  advanceView(dt);
+  const dz=sgn*(isSin()?s.worldAmp*ds:s.worldSpeed*dt);worldOffset+=dz;
+  for(const p of points){p.z-=dz;const v=project(p);if(v.z<s.near||v.z>s.far||v.x<0||v.x>w||v.y<0||v.y>h)spawn3D(p);}
+ }else if(isRadial()){
+  if(isSin())radialLog=sgn*s.radialAmp*Math.sin(phase);
+  else{const scale=Math.exp(sgn*s.radialSpeed*dt);const maxR=Math.hypot(w,h)/2+20;for(const p of points){p.x*=scale;p.y*=scale;const r=Math.hypot(p.x,p.y);if(r>maxR||r<2){const angle=rand()*TAU,newR=r>maxR?2:maxR;p.x=Math.cos(angle)*newR;p.y=Math.sin(angle)*newR;}}}
+ }else{const vertical=['up','down','oscY'].includes(s.pattern);const span=vertical?h:w;shift=mod(shift+sgn*(isSin()?s.amplitude*ds:s.speed*dt),span);}
+}
+function draw(){ctx.globalAlpha=1;ctx.fillStyle=s.bg;ctx.fillRect(0,0,w,h);ctx.fillStyle=s.color;ctx.strokeStyle=s.color;ctx.globalAlpha=s.opacity;const r=s.size/2+1;
+ for(const p of points){let x,y;if(s.mode==='3d'){({x,y}=project(p));}else if(isRadial()){const scale=isSin()?Math.exp(radialLog):1;x=w/2+p.x*scale;y=h/2+p.y*scale;}else{const vertical=['up','down','oscY'].includes(s.pattern);x=mod(p.x+(vertical?0:shift),w);y=mod(p.y+(vertical?shift:0),h);
+  // Draw periodic copies at seams so shapes wrap without suddenly popping.
+  const xs=[x],ys=[y];if(x<r)xs.push(x+w);if(x>w-r)xs.push(x-w);if(y<r)ys.push(y+h);if(y>h-r)ys.push(y-h);for(const a of xs)for(const b of ys)shape(a,b,s.size);continue;}
+ if(x>=-r&&x<=w+r&&y>=-r&&y<=h+r)shape(x,y,s.size);
+ }ctx.globalAlpha=1;
+}
+function notify(msg){$('toast').textContent=msg;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500);}
+function stop(){running=false;counting=false;cancelMouse();$('countdown').hidden=true;syncStatus();}
+function start(){if(running||counting)return;if($('warning').open)return;lastStamp=0;if($('countEnabled').checked){counting=true;countStart=performance.now();$('countdown').textContent='3';$('countdown').hidden=false;}else running=true;syncStatus();}
+function syncStatus(){ $('state').textContent=counting?'COUNTDOWN':running?'RUNNING':'STOPPED';$('start').disabled=running||counting;$('condition').textContent=presetName;const rate=s.mode==='3d'?`${s.worldSpeed.toFixed(2)} m/s`:isRadial()?`${s.radialSpeed.toFixed(2)} s⁻¹`:`${s.speed} px/s`;const amp=s.mode==='3d'?`${s.worldAmp.toFixed(2)} m`:isRadial()?`${s.radialAmp.toFixed(2)} log-scale`:`${s.amplitude} px`;$('metrics').textContent=`${isSin()?`A ${amp} · ${s.frequency.toFixed(2)} Hz`:rate} · ${s.count} dots · ${time.toFixed(1)} s · ${fps||'—'} fps`;$('cameraValues').textContent=`視線：左右 ${(view.yaw*180/Math.PI).toFixed(1)}° / 上下 ${(view.pitch*180/Math.PI).toFixed(1)}° · 手動の前後移動 ${view.travel.toFixed(2)} m`;}
+function frame(stamp){const dt=lastStamp?(stamp-lastStamp)/1000:0;lastStamp=stamp;
+ // A stall must not cause an uncontrolled jump; pause rather than alter speed.
+ if(running&&dt>.25){stop();setHidden(false);notify('描画が中断されたため停止しました。STARTで再開できます。');}
+ if(counting){const remain=3-Math.floor((stamp-countStart)/1000);if(remain<=0){counting=false;running=true;$('countdown').hidden=true;syncStatus();}else $('countdown').textContent=String(remain);}
+ else if(running)advance(dt);
+ draw();frames++;if(stamp-fpsStart>=1000){fps=Math.round(frames*1000/(stamp-fpsStart));frames=0;fpsStart=stamp;}if(stamp-lastStatus>250){syncStatus();lastStatus=stamp;}requestAnimationFrame(frame);}
+function addRange(parent,key,label,min,max,step,unit){const row=document.createElement('div');row.className='row';row.innerHTML=`<div class="label"><label for="${key}">${label}</label><span class="value"><input aria-label="${label} 数値" type="number" id="${key}Number" min="${min}" max="${max}" step="${step}"><span>${unit}</span></span></div><input id="${key}" type="range" min="${min}" max="${max}" step="${step}" aria-label="${label}">`;$(parent).append(row);ranges[key]={row,input:$(key),number:$(key+'Number')};for(const input of [$(key),$(key+'Number')]){input.addEventListener('input',()=>{if(input.value===''||!Number.isFinite(input.valueAsNumber))return;let v=Math.max(min,Math.min(max,input.valueAsNumber));v=Number((Math.round((v-min)/step)*step+min).toFixed(4));if(key==='near')v=Math.min(v,s.far-1);if(key==='far')v=Math.max(v,s.near+1);s[key]=v;ranges[key].input.value=v;if(input.type!=='number'||v!==input.valueAsNumber)ranges[key].number.value=v;else ranges[key].number.value=input.value;changed(key);});input.addEventListener('change',()=>syncUI());}}
+function buildRanges(){addRange('motionRanges','speed','Speed',0,200,1,'px/s');addRange('motionRanges','amplitude','Amplitude（片振幅）',0,80,1,'px');addRange('motionRanges','radialSpeed','Expansion rate',0,.5,.01,'s⁻¹');addRange('motionRanges','radialAmp','Amplitude（対数倍率）',0,.35,.01,'');addRange('motionRanges','worldSpeed','Simulated speed',0,2,.05,'m/s');addRange('motionRanges','worldAmp','Amplitude（前後変位）',0,.5,.01,'m');addRange('motionRanges','frequency','Frequency',.05,.5,.01,'Hz');addRange('appearanceRanges','size','ドットサイズ（直径・幅）',1,16,.5,'px');addRange('appearanceRanges','count','ドット数 / density',100,4000,100,'個');addRange('appearanceRanges','opacity','不透明度',.05,1,.05,'');addRange('depthRanges','near','Depth near',1,10,.5,'m');addRange('depthRanges','far','Depth far',2,50,.5,'m');addRange('depthRanges','fov','Field of view（水平）',40,120,1,'°');addRange('depthRanges','foeX','FOE X（左 → 右）',10,90,1,'%');addRange('depthRanges','foeY','FOE Y（上 → 下）',10,90,1,'%');}
+function syncPatterns(){const keys=s.mode==='3d'?['expand','contract','oscR']:s.mode==='push'?['left','right','up','down','oscX','oscY']:Object.keys(PATTERNS);if(!keys.includes(s.pattern))s.pattern=keys[0];$('pattern').replaceChildren(...keys.map(key=>{const o=document.createElement('option');o.value=key;o.textContent=s.mode==='3d'&&key==='expand'?'前進 / Forward':s.mode==='3d'&&key==='contract'?'後退 / Backward':PATTERNS[key];return o;}));}
+function syncUI(){for(const key of ['mode','pattern','motionType','shape','bg','color'])$(key).value=s[key];for(const [key,r] of Object.entries(ranges)){r.input.value=s[key];r.number.value=s[key];}
+ $('mouseControls').hidden=s.mode!=='3d';$('explore').hidden=s.mode==='3d';
+ const sin=isSin(),rad=isRadial(),three=s.mode==='3d';for(const key of ['speed','amplitude','radialSpeed','radialAmp','worldSpeed','worldAmp','frequency'])ranges[key].row.hidden=true;
+ ranges[three?(sin?'worldAmp':'worldSpeed'):rad?(sin?'radialAmp':'radialSpeed'):(sin?'amplitude':'speed')].row.hidden=false;ranges.frequency.row.hidden=!sin;$('depthSection').hidden=!three;
+ let eq,desc;if(three){eq=sin?`Z(t) = Z₀ ${sign()>0?'−':'+'} A sin(2πft)`:`x = FOEₓ + F·X/Z; Ż = ${sign()>0?'−':'+'}v`;desc=`${sin?'前後の観察者変位を正弦波で与えます。':'前進で拡大、後退で収縮。'}近い点ほど速く流れます。${sin?' 最大速度 '+(TAU*s.frequency*s.worldAmp).toFixed(2)+' m/s。':''}`;}else if(rad){eq=sin?`r(t) = r₀ exp[${sign()<0?'−':''}a sin(2πft)]`:`dr/dt = ${sign()<0?'−':''}k r`;desc=sin?`倍率 ${Math.exp(-s.radialAmp).toFixed(2)}–${Math.exp(s.radialAmp).toFixed(2)}倍。画面中央からの距離を周期的に変えます。`:'2D放射流：中央からの距離に比例する速度。奥行きによる速度差はありません。';}else{eq=sin?'q(t) = ±A sin(2πft)':'q(t) = ±v t';desc=sin?`片振幅 ${s.amplitude} px、往復幅 ${2*s.amplitude} px。最大速度 ${(TAU*s.frequency*s.amplitude).toFixed(1)} px/s。`:'方向は画面上のドットの移動方向です。画面端は連続的に折り返します。';}$('equation').textContent=eq;$('explanation').textContent=desc;syncStatus();}
+function changed(key){presetName='Custom · '+(s.mode==='3d'?'3D optic flow':s.mode==='push'?'Visual push':'2D dot motion');document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-pressed','false'));
+ if(!['bg','color','shape','size','opacity'].includes(key))resetMotion();syncUI();draw();}
+function applyPreset(i){stop();s={...DEFAULTS,...PRESETS[i].values};presetName=PRESETS[i].name;syncPatterns();resetMotion();syncUI();draw();document.querySelectorAll('.preset').forEach((b,j)=>b.setAttribute('aria-pressed',String(i===j)));}
+function setHidden(value){document.body.classList.toggle('hidden-controls',value);if(value)$('show').focus();}
+$('presets').replaceChildren(...PRESETS.map((p,i)=>{const b=document.createElement('button');b.className='preset';b.innerHTML=`${p.name}<small>${p.sub}</small>`;b.addEventListener('click',()=>applyPreset(i));return b;}));
+for(const key of ['mode','pattern','motionType','shape','bg','color'])$(key).addEventListener('input',()=>{s[key]=$(key).value;if(key==='mode')syncPatterns();if(key==='pattern')s.motionType=s.pattern.startsWith('osc')?'sinusoidal':'constant';if(key==='motionType'&&s.motionType==='constant'&&s.pattern.startsWith('osc'))s.pattern={oscX:'right',oscY:'down',oscR:'expand'}[s.pattern];changed(key);});
+$('start').onclick=start;$('stop').onclick=stop;$('reset').onclick=()=>{stop();resetMotion();draw();syncStatus();notify('設定を保持し、同じ初期配置・位相0に戻しました。');};$('hide').onclick=()=>setHidden(true);$('show').onclick=()=>setHidden(false);
+$('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{notify('全画面表示を開始できません。ブラウザのF11も利用できます。');}};
+document.addEventListener('fullscreenchange',()=>{$('fullscreen').textContent=document.fullscreenElement?'EXIT FULLSCREEN':'FULLSCREEN';if(!document.fullscreenElement){stop();setHidden(false);}});
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'){stop();setHidden(false);}
+ const editing=e.target.closest('input,select,textarea,[contenteditable="true"]');
+ if(e.code==='Space'&&!editing&&!$('warning').open){e.preventDefault();if(!e.repeat){if(running||counting)stop();else start();}}
+ if(e.key.toLowerCase()==='h'&&!editing&&!$('warning').open){e.preventDefault();setHidden(!document.body.classList.contains('hidden-controls'));}
+});
+// Only the stimulus canvas accepts gestures; panel scrolling remains native.
+canvas.style.touchAction='none';
+function mouseAllowed(){return s.mode==='3d'&&$('mouseEnabled').checked&&!$('warning').open;}
+canvas.addEventListener('pointerdown',e=>{if(e.button!==0||!mouseAllowed())return;if(!running){notify('Space または STARTで再生すると視点を操作できます。');return;}e.preventDefault();document.activeElement.blur();drag={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';});
+canvas.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId||!running)return;const sensitivity=.12*Math.PI/180;view.targetYaw=clamp(view.targetYaw+(e.clientX-drag.x)*sensitivity,-Math.PI/3,Math.PI/3);view.targetPitch=clamp(view.targetPitch+(e.clientY-drag.y)*sensitivity,-Math.PI/4,Math.PI/4);drag.x=e.clientX;drag.y=e.clientY;});
+function releaseDrag(e){if(drag?.id===e.pointerId){drag=null;canvas.style.cursor='';}}
+canvas.addEventListener('pointerup',releaseDrag);canvas.addEventListener('pointercancel',()=>cancelMouse());canvas.addEventListener('lostpointercapture',releaseDrag);
+canvas.addEventListener('wheel',e=>{if(!mouseAllowed()||e.ctrlKey)return;e.preventDefault();if(!running){notify('Space または STARTで再生すると視点を操作できます。');return;}const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?h:1);view.pending=clamp(view.pending-delta*.002,-.5,.5);},{passive:false});
+$('mouseEnabled').onchange=()=>cancelMouse();
+$('explore').onclick=()=>{stop();s.mode='3d';s.pattern='expand';s.motionType='constant';s.worldSpeed=0;syncPatterns();changed('mode');$('mouseEnabled').checked=true;notify('3D探索：Spaceで再生。ドラッグで視線、ホイールで前後移動。');};
+$('centerView').onclick=()=>{stop();resetMotion();syncUI();draw();notify('正面・初期配置に戻しました。Spaceで再生できます。');};
+document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();setHidden(false);}});window.addEventListener('blur',()=>{if(running||counting){stop();setHidden(false);}});window.addEventListener('resize',resize);
+$('ack').onclick=()=>{$('warning').close();$('start').focus();};$('safety').onclick=()=>{stop();$('warning').showModal();};$('warning').addEventListener('cancel',()=>stop());
+buildRanges();applyPreset(0);resize();$('warning').showModal();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
